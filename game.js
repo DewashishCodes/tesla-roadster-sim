@@ -566,7 +566,7 @@ function finish(kind, title, scoreLines = null, score = 0) {
     if (kind === 'ok') sfx.ding();
   }
   const lines = scored ? scoreLines : [['Distance', `${Math.round(Math.abs(s.x - (s.level === 2 ? RX : 0)))} m`], ['Air used', `${Math.round(AIR0 - s.air)} kg`]];
-  lastResult = { kind, title, score, lines, level: s.level, newBest };
+  lastResult = { kind, title, score, lines, level: s.level, newBest, stats: cardStats(s, kind) };
   $('eKick').textContent = `${LEVEL_NAME[s.level]} · ${newBest ? 'New best' : kind === 'ok' ? 'Stuck the landing' : s.level === 3 ? 'Run over' : 'Crashed'}`;
   $('eTitle').textContent = title;
   $('eScore').textContent = score.toLocaleString('en-IN');
@@ -978,35 +978,123 @@ function step3(dt) {
   jets(dt, lifting, boosting);
 }
 
-// ---------------- share card: a 1080x1920 story image of your result ----------------
+// ---------------- share card: a 1080x1920 story image built to be shown off ----------------
 const snap = document.createElement('canvas');
 function snapshot() { renderer.render(scene, camera); snap.width = renderer.domElement.width; snap.height = renderer.domElement.height; snap.getContext('2d').drawImage(renderer.domElement, 0, 0); }
+
+// stats worth bragging about (no air figures; those mean nothing to someone scrolling)
+function cardStats(s, kind) {
+  const ft = Math.round(s.maxH * 3.281);
+  if (s.level === 3) return [[`${Math.round(s.x - XE)} m`, 'Distance'], [`${E.cleared}`, 'Obstacles cleared'], [`${E.cans}`, 'Air cans grabbed']];
+  if (s.level === 2) return [[`${ft} ft`, 'Dropped from'], [kind === 'ok' ? (s.landed === 'soft' ? 'Soft' : 'Hard') : 'Wrecked', 'Landing'], [s.m < 0 ? 'Forward' : 'At the wall', 'Faced']];
+  return [[`${ft} ft`, 'Peak height'], [`${s.rollsBank}`, 'Barrel rolls'], [kind === 'ok' ? (s.landed === 'soft' ? 'Soft' : 'Hard') : 'Wrecked', 'Landing']];
+}
+function rank(r) {
+  if (r.kind !== 'ok' && r.level !== 3) return 'WRECKED IT';
+  if (r.level === 3) { const d = r.stats ? parseInt(r.stats[0][0]) : 0; return d < 300 ? 'ROOKIE' : d < 800 ? 'ROAD RUNNER' : d < 1500 ? 'JET JOCKEY' : 'ENDLESS LEGEND'; }
+  return r.score < 1700 ? 'TEST DRIVER' : r.score < 2300 ? 'TEST PILOT' : r.score < 2900 ? 'THRUSTER ACE' : 'SPACEX GRADE';
+}
+
+// the hero: a clean studio render of the Roadster on its jets, from its own small renderer
+let hero = null;
+function heroCanvas(crashed) {
+  const N = 1080;
+  if (!hero) {
+    const r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    r2.setPixelRatio(1); r2.setSize(N, N, false);
+    r2.toneMapping = THREE.ACESFilmicToneMapping; r2.toneMappingExposure = 1.2;
+    const sc2 = new THREE.Scene();
+    const built = buildCar(); sc2.add(built.car);
+    built.flames.forEach((f) => f.scale.set(1.7, 2.8, 1.7));
+    const jm = new THREE.MeshBasicMaterial({ color: 0xd6ecff, alphaMap: beamTex, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }); jm.toneMapped = false;
+    for (const p of NOZ.corner) { const g = new THREE.ConeGeometry(.3, 2.8, 18, 1, true); g.translate(0, -1.4, 0); const c = new THREE.Mesh(g, jm); c.position.set(...p); built.car.add(c); }
+    sc2.add(new THREE.AmbientLight(0xffffff, .35), new THREE.HemisphereLight(0x8aa3c8, 0x110808, .6));
+    const key = new THREE.DirectionalLight(0xffffff, 2.6); key.position.set(4, 6, 8); sc2.add(key);
+    const rim = new THREE.DirectionalLight(RED, 3.5); rim.position.set(-6, 2, -5); sc2.add(rim);
+    const under = new THREE.PointLight(0xcfe6ff, 30, 6); under.position.set(0, -1, 1); sc2.add(under);
+    const cam = new THREE.PerspectiveCamera(26, 1, .1, 100);
+    cam.position.set(7.4, 2.4, 11.4); cam.lookAt(0, -.35, 0);
+    hero = { r2, sc2, cam, car: built.car };
+  }
+  hero.car.rotation.set(crashed ? 2.5 : .1, crashed ? -.2 : -.35, crashed ? .5 : .07);
+  hero.r2.setClearColor(0x000000, 0); hero.r2.render(hero.sc2, hero.cam);
+  return hero.r2.domElement;
+}
+
 async function makeCard() {
   const r = lastResult; if (!r) return null;
   const W = 1080, H = 1920, c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d');
-  g.fillStyle = '#050608'; g.fillRect(0, 0, W, H);
-  // game frame, cover-cropped into the top of the card
-  const sw = snap.width, sh = snap.height, boxH = 1180, sc = Math.max(W / sw, boxH / sh);
-  g.drawImage(snap, (W - sw * sc) / 2, (boxH - sh * sc) / 2 + 60, sw * sc, sh * sc);
-  const gr = g.createLinearGradient(0, 700, 0, 1400); gr.addColorStop(0, 'rgba(5,6,8,0)'); gr.addColorStop(1, 'rgba(5,6,8,1)');
-  g.fillStyle = gr; g.fillRect(0, 700, W, 700); g.fillStyle = '#050608'; g.fillRect(0, 1400, W, H - 1400);
-  const top = g.createLinearGradient(0, 0, 0, 260); top.addColorStop(0, 'rgba(5,6,8,.9)'); top.addColorStop(1, 'rgba(5,6,8,0)'); g.fillStyle = top; g.fillRect(0, 0, W, 260);
-  await document.fonts.ready;
-  const mono = (s) => `500 ${s}px "IBM Plex Mono", monospace`, sans = (s, w = 700) => `${w} ${s}px "IBM Plex Sans", sans-serif`;
-  g.fillStyle = '#ff3b2f'; g.fillRect(80, 110, 90, 8);
-  g.font = mono(30); g.fillText('FLYING ROADSTER SIM', 80, 170);
-  g.fillStyle = '#a3a8b0'; g.fillText(`LEVEL ${r.level} · ${LEVEL_NAME[r.level].toUpperCase()}`, 80, 215);
-  g.fillStyle = r.kind === 'ok' ? '#ff3b2f' : '#a3a8b0'; g.font = mono(30);
-  g.fillText(r.kind === 'ok' ? (r.newBest ? 'NEW PERSONAL BEST' : 'STUCK THE LANDING') : 'CRASHED', 80, 1180);
-  g.fillStyle = '#eceef1'; g.font = sans(96); g.fillText(r.title, 76, 1290);
-  g.font = sans(210); g.fillText(r.score.toLocaleString('en-IN'), 70, 1500);
-  g.font = mono(30); let y = 1560;
-  for (const [a, b] of r.lines.slice(0, 5)) { g.fillStyle = '#a3a8b0'; g.fillText(a, 80, y); g.fillStyle = '#eceef1'; const t = String(b); g.fillText(t, W - 80 - g.measureText(t).width, y); y += 44; }
-  g.fillStyle = '#ff3b2f'; g.font = sans(44); g.fillText('Can you beat it?', 80, 1860);
-  g.fillStyle = 'rgba(236,238,241,.6)'; g.font = mono(30); const h = '@dewashish.ai'; g.fillText(h, W - 80 - g.measureText(h).width, 1860);
+  await Promise.all([document.fonts.ready, document.fonts.load('700 90px Caveat'), document.fonts.load('700 60px "IBM Plex Sans"'), document.fonts.load('500 30px "IBM Plex Mono"')]);
+  const mono = (s, w = 500) => `${w} ${s}px "IBM Plex Mono", monospace`, sans = (s, w = 700) => `${w} ${s}px "IBM Plex Sans", sans-serif`;
+  const RED_ = '#ff3b2f', INK = '#eceef1', GREY = '#a3a8b0';
+  const crashed = r.kind !== 'ok' && r.level !== 3;
+  const right = (t, x, y) => g.fillText(t, x - g.measureText(t).width, y);
+
+  // night sky, haze and two searchlight beams
+  const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0c0f15'); bg.addColorStop(.55, '#07080b'); bg.addColorStop(1, '#030304');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  for (const [x0, x1] of [[80, 420], [1000, 660]]) {
+    const b = g.createLinearGradient(x0, 0, x1, 1100); b.addColorStop(0, 'rgba(210,225,255,.16)'); b.addColorStop(1, 'rgba(210,225,255,0)');
+    g.fillStyle = b; g.beginPath(); g.moveTo(x0 - 30, 0); g.lineTo(x0 + 30, 0); g.lineTo(x1 + 160, 1100); g.lineTo(x1 - 160, 1100); g.fill();
+  }
+  // giant outlined stage word behind the car
+  g.save(); g.font = sans(230, 700); g.strokeStyle = 'rgba(236,238,241,.07)'; g.lineWidth = 3;
+  const word = { 1: 'KICKFLIP', 2: 'THE RAMP', 3: 'ENDLESS' }[r.level];
+  g.strokeText(word, (W - g.measureText(word).width) / 2, 560); g.restore();
+
+  // red LED floor line with glow, and a cloud bank the jets are pushing into
+  const fy = 1060;
+  const glowG = g.createLinearGradient(0, fy - 60, 0, fy + 60); glowG.addColorStop(0, 'rgba(255,40,30,0)'); glowG.addColorStop(.5, 'rgba(255,40,30,.35)'); glowG.addColorStop(1, 'rgba(255,40,30,0)');
+  g.fillStyle = glowG; g.fillRect(0, fy - 60, W, 120); g.fillStyle = '#ff2a1f'; g.fillRect(0, fy - 2, W, 4);
+  const puff = puffTex().image;
+  for (let i = 0; i < 70; i++) {
+    const t = i / 70, x = 140 + 800 * ((i * .618) % 1), y = fy - 40 - 140 * Math.random() * (1 - Math.abs(t - .5)), s = 160 + 260 * Math.random();
+    g.globalAlpha = .22 + .25 * Math.random(); g.drawImage(puff, x - s / 2, y - s / 2, s, s);
+  }
+  g.globalAlpha = 1;
+  // the car
+  const hc = heroCanvas(crashed);
+  g.drawImage(hc, 0, 110, W, W);
+  if (crashed) { g.save(); g.translate(W / 2, 640); g.rotate(-.12); g.font = sans(120, 700); g.strokeStyle = RED_; g.lineWidth = 6; const t = 'WRECKED'; const tw = g.measureText(t).width; g.strokeRect(-tw / 2 - 30, -110, tw + 60, 140); g.fillStyle = RED_; g.fillText(t, -tw / 2, 0); g.restore(); }
+
+  // header
+  g.fillStyle = RED_; g.fillRect(80, 96, 90, 8);
+  g.font = mono(30); g.fillStyle = INK; g.fillText('FLYING ROADSTER SIM', 80, 156);
+  g.fillStyle = GREY; g.fillText(`STAGE ${r.level} · ${LEVEL_NAME[r.level].toUpperCase()}`, 80, 200);
+  if (r.newBest) { g.font = mono(26); const t = 'NEW PERSONAL BEST'; const tw = g.measureText(t).width; g.fillStyle = RED_; g.fillRect(W - 80 - tw - 36, 128, tw + 36, 52); g.fillStyle = '#fff'; g.fillText(t, W - 80 - tw - 18, 164); }
+
+  // rank badge, score, result
+  let y = 1170;
+  g.font = mono(30, 500); const rk = rank(r), rw = g.measureText(rk).width;
+  g.fillStyle = RED_; g.beginPath(); g.roundRect(80, y - 44, rw + 56, 62, 31); g.fill();
+  g.fillStyle = '#fff'; g.fillText(rk, 108, y);
+  y += 205; g.fillStyle = INK; g.font = sans(230, 700); const sc = r.score.toLocaleString('en-IN'); g.fillText(sc, 70, y);
+  g.font = mono(34); g.fillStyle = GREY; g.fillText('PTS', 70 + ctxWidth(g, sc, sans(230, 700)) + 18, y);
+  y += 78; g.font = sans(58, 600); g.fillStyle = INK; g.fillText(r.title, 80, y);
+
+  // stat chips
+  y += 42; const cw = (W - 160 - 2 * 20) / 3;
+  (r.stats || []).slice(0, 3).forEach(([v, l], i) => {
+    const x = 80 + i * (cw + 20);
+    g.fillStyle = 'rgba(255,255,255,.05)'; g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 2;
+    g.beginPath(); g.roundRect(x, y, cw, 140, 22); g.fill(); g.stroke();
+    g.fillStyle = INK; g.font = sans(v.length > 7 ? 40 : 56, 700); g.fillText(v, x + 26, y + 76);
+    g.fillStyle = GREY; g.font = mono(20); g.fillText(l.toUpperCase(), x + 26, y + 114);
+  });
+
+  // signature footer: mascot, handwritten name, handle, challenge
+  const fy2 = 1790;
+  g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(80, fy2 - 70, W - 160, 2);
+  const av = await new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'mascot.png'; });
+  if (av) { g.save(); g.beginPath(); g.arc(130, fy2 + 20, 50, 0, Math.PI * 2); g.clip(); g.drawImage(av, 80, fy2 - 30, 100, 100); g.restore(); g.strokeStyle = RED_; g.lineWidth = 3; g.beginPath(); g.arc(130, fy2 + 20, 51, 0, Math.PI * 2); g.stroke(); }
+  g.fillStyle = INK; g.font = '700 84px Caveat, cursive'; g.fillText('Dewashish', 205, fy2 + 30);
+  g.fillStyle = GREY; g.font = mono(24); g.fillText('@dewashish.ai', 210, fy2 + 72);
+  g.textAlign = 'left'; g.fillStyle = RED_; g.font = sans(40, 700); right('Beat my score', W - 80, fy2 + 14);
+  g.fillStyle = GREY; g.font = mono(22); right(location.hostname && !/localhost|127\.0\.0\.1/.test(location.hostname) ? location.host : 'comment FLY on the reel', W - 80, fy2 + 60);
   return new Promise((res) => c.toBlob(res, 'image/png'));
 }
+const ctxWidth = (g, t, font) => { const f = g.font; g.font = font; const w = g.measureText(t).width; g.font = f; return w; };
 if (DEBUG) window.__card = makeCard; // test hook
 async function shareCard() {
   const r = lastResult; if (!r) return;
