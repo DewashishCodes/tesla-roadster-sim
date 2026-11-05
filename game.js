@@ -540,7 +540,7 @@ $('play').addEventListener('click', () => start(1));
 $('play2').addEventListener('click', () => start(2));
 $('again').addEventListener('click', () => start(state.level));
 $('play3').addEventListener('click', () => start(3));
-$('other').addEventListener('click', () => start(state.level % 3 + 1));
+document.querySelectorAll('.pickl').forEach((b) => b.addEventListener('click', () => start(+b.dataset.l)));
 $('share').addEventListener('click', shareCard);
 function refreshBests() {
   for (const l of [1, 2, 3]) { const g = store.get(`rs-ghost-${l}`); if (g) $(`best${l}`).textContent = `Your best ${g.score.toLocaleString('en-IN')}`; }
@@ -565,7 +565,7 @@ function finish(kind, title, scoreLines = null, score = 0) {
   $('eTitle').textContent = title;
   $('eScore').textContent = score.toLocaleString('en-IN');
   $('eLines').innerHTML = lines.map(([a, b]) => `${a}<span>${b}</span>`).join('<br>');
-  $('other').textContent = `Try ${LEVEL_NAME[state.level % 3 + 1]}`;
+  document.querySelectorAll('.pickl').forEach((b) => b.classList.toggle('cur', +b.dataset.l === s.level));
   refreshBests();
   setTimeout(() => { snapshot(); $('end').classList.remove('hide'); $('ctrl').style.display = 'none'; }, kind === 'ok' ? 1300 : 2600);
 }

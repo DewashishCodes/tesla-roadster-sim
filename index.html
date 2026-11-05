@@ -41,7 +41,7 @@
   .how { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 14px 0 18px; font-size: 14px; color: var(--ink); }
   .how b { font-family: 'IBM Plex Mono', monospace; color: var(--red); font-weight: 500; font-size: 12px; padding-top: 2px; }
   .cta { min-height: 58px; padding: 8px 12px; border-radius: 16px; border: none; background: var(--red); color: #fff; font-weight: 700; font-size: 18px; font-family: inherit; }
-  .levels { display: grid; gap: 10px; } .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .levels { display: grid; gap: 10px; } .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; } .three .cta { min-height: 48px; font-size: 15px; } .pickl.cur { border-color: var(--red); }
   .cta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; }
   .cta small { font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 11px; letter-spacing: .06em; opacity: .85; }
   .cta.alt { background: rgba(255,255,255,.06); border: 1.5px solid #3a3e46; color: var(--ink); }
@@ -110,7 +110,13 @@
   <div class="lines" id="eLines"></div>
   <div class="levels">
     <button class="cta" id="again">Fly again</button>
-    <div class="two"><button class="cta alt" id="share">Share score</button><button class="cta alt" id="other">Other level</button></div>
+    <button class="cta alt" id="share">Share score</button>
+    <div class="kicker mono" style="margin:8px 0 0">Play any stage</div>
+    <div class="three">
+      <button class="cta alt pickl" data-l="1">Kickflip</button>
+      <button class="cta alt pickl" data-l="2">Ramp</button>
+      <button class="cta alt pickl" data-l="3">Endless</button>
+    </div>
   </div>
   <div class="fine"><span class="handle">@dewashish.ai</span> &nbsp;Share your card and tag me.<br>Fan-made. Not affiliated with Tesla.</div>
 </div>
