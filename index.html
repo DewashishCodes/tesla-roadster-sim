@@ -53,6 +53,15 @@
   .cta.alt { background: rgba(255,255,255,.06); border: 1.5px solid #3a3e46; color: var(--ink); }
   .cta.alt small { color: var(--grey); }
   #mute { pointer-events: auto; background: none; border: 1px solid #3a3e46; color: var(--grey); font-size: 10px; padding: 4px 8px; border-radius: 6px; }
+  /* result screen: the score card is the result */
+  #end { justify-content: flex-start; padding-top: max(60px, env(safe-area-inset-top)); background: rgba(5,6,8,.94); }
+  #end .oldres { display: none; }
+  #cardWrap { position: relative; width: 100%; display: flex; justify-content: center; margin-bottom: 14px; }
+  #cardImg { height: min(58vh, 640px); aspect-ratio: 9 / 16; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 0 1px #2a2d33; background: #07080b; object-fit: cover; }
+  #cardImg:not([src]) { opacity: 0; }
+  #cardWait { position: absolute; top: 45%; color: var(--grey); font-size: 12px; }
+  #end .levels { max-width: 460px; margin: 0 auto; width: 100%; }
+  @media (min-aspect-ratio: 1/1) and (min-width: 820px) { #end { flex-direction: row; align-items: center; justify-content: center; gap: 48px; } #cardWrap { width: auto; margin: 0; } #cardImg { height: min(82vh, 760px); } #end .levels { margin: 0; } #end .fine { display: none; } }
   #credits { position: fixed; top: max(14px, env(safe-area-inset-top)); right: 14px; z-index: 20; display: flex; gap: 8px; align-items: center; }
   #credits.hide { display: none; }
   .tip { position: relative; }
@@ -142,14 +151,11 @@
 </div>
 
 <div class="screen hide" id="end">
-  <div class="bar"></div>
-  <div class="kicker mono" id="eKick">Result</div>
-  <h1 id="eTitle">Landed</h1>
-  <div class="big" id="eScore">0</div>
-  <div class="lines" id="eLines"></div>
+  <div id="cardWrap"><img id="cardImg" alt="Your score card"><div id="cardWait" class="mono">Drawing your card...</div></div>
+  <div class="oldres"><div class="kicker mono" id="eKick">Result</div><h1 id="eTitle">Landed</h1><div class="big" id="eScore">0</div><div class="lines" id="eLines"></div></div>
   <div class="levels">
-    <button class="cta" id="again">Fly again</button>
-    <button class="cta alt" id="share">Share score</button>
+    <button class="cta alt" id="again">Fly again</button>
+    <button class="cta" id="share">Share this card</button>
     <div class="kicker mono" style="margin:8px 0 0">Play any stage</div>
     <div class="three">
       <button class="cta alt pickl" data-l="1">Kickflip</button>
@@ -163,6 +169,6 @@
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
 </script>
-<script type="module" src="./game.js?v=10"></script>
+<script type="module" src="./game.js?v=12"></script>
 </body>
 </html>
