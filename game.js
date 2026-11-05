@@ -1092,7 +1092,7 @@ async function makeCard() {
   g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(80, fy2 - 70, W - 160, 2);
   const av = await new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'mascot.png'; });
   if (av) { g.save(); g.beginPath(); g.arc(130, fy2 + 20, 50, 0, Math.PI * 2); g.clip(); g.drawImage(av, 80, fy2 - 30, 100, 100); g.restore(); g.strokeStyle = RED_; g.lineWidth = 3; g.beginPath(); g.arc(130, fy2 + 20, 51, 0, Math.PI * 2); g.stroke(); }
-  g.fillStyle = INK; g.font = '700 84px Caveat, cursive'; g.fillText('Dewashish', 205, fy2 + 30);
+  g.fillStyle = INK; g.font = '700 64px Caveat, cursive'; g.fillText('Made by Dewashish', 205, fy2 + 24);
   g.fillStyle = GREY; g.font = mono(24); g.fillText('@dewashish.ai', 210, fy2 + 72);
   g.textAlign = 'left'; g.fillStyle = RED_; g.font = sans(40, 700); right('Beat my score', W - 80, fy2 + 14);
   g.fillStyle = GREY; g.font = mono(22); right(location.hostname && !/localhost|127\.0\.0\.1/.test(location.hostname) ? location.host : 'comment FLY on the reel', W - 80, fy2 + 60);
