@@ -474,6 +474,30 @@ const sfx = (() => {
 $('mute').addEventListener('click', (e) => { e.stopPropagation(); $('mute').textContent = sfx.toggle() ? 'Sound off' : 'Sound on'; });
 $('mute').textContent = sfx.muted ? 'Sound off' : 'Sound on';
 
+// ---------------- control icons: each button shows what it does (and the key, on desktop) ----------------
+// side view of the Roadster, nose to the right, about 38 x 12 units
+const CAR_SVG = '<path d="M4 18 L7 14 L16 12.5 L22 9.5 L31 9.5 L37 12.5 L41 14 L41 18 Z" fill="#edeef0"/><path d="M17 12.5 L22.5 10 L30.5 10 L35 12.5 Z" fill="#0b0d10"/><rect x="4" y="16.4" width="37" height="2.2" fill="#2a2c31"/><rect x="3.2" y="14.5" width="1.7" height="1.5" fill="#ff2a1f"/><rect x="40.4" y="15" width="1.4" height="1" fill="#fff"/><circle cx="11" cy="18.8" r="2.7" fill="#0d0d0f" stroke="#5a5e66" stroke-width=".9"/><circle cx="34" cy="18.8" r="2.7" fill="#0d0d0f" stroke="#5a5e66" stroke-width=".9"/>';
+const ICE = '#bfe2ff';
+const arrowArc = (d, head) => `<path d="${d}" fill="none" stroke="#ff3b2f" stroke-width="2.4" stroke-linecap="round"/><path d="${head}" fill="#ff3b2f"/>`;
+const ICONS = {
+  // car hovering on two jets pushing down into a cloud
+  lift: `<g transform="translate(9 0)">${CAR_SVG}</g><path d="M18 22 L14.5 32 L23.5 32 Z M41 22 L37.5 32 L46.5 32 Z" fill="${ICE}" opacity=".85"/><g fill="#d9dde2" opacity=".9"><ellipse cx="19" cy="34.5" rx="7" ry="3"/><ellipse cx="42" cy="34.5" rx="7" ry="3"/><ellipse cx="30.5" cy="35.5" rx="8" ry="2.6"/></g>`,
+  // rear jets firing backwards, speed lines
+  boost: `<g transform="translate(17 6)">${CAR_SVG}</g><path d="M20 20 L4 17.5 L4 23.5 Z M20 23 L7 23 L7 26.5 Z" fill="${ICE}" opacity=".9"/><path d="M2 12 H12 M5 30 H15" stroke="#7d828a" stroke-width="1.6" stroke-linecap="round"/>`,
+  // barrel roll: the car inside a spin arrow
+  roll: `<g transform="translate(9.5 5)">${CAR_SVG}</g>${arrowArc('M8 30 A 24 15 0 1 0 14 7', 'M10 3 L18 6.5 L11.5 11.5 Z')}`,
+  // flip upright: car on its roof with a turn-over arrow
+  flip: `<g transform="translate(9.5 35) scale(1 -1)">${CAR_SVG}</g>${arrowArc('M54 26 C 62 14, 50 3, 38 5', 'M40 1 L33 5.5 L40.5 9.5 Z')}`,
+  // face front: the car turning its nose around (mirrored car plus a U-turn arrow)
+  turn: `<g transform="translate(54.5 8) scale(-1 1)">${CAR_SVG}</g>${arrowArc('M14 33 C 24 39, 44 39, 52 31', 'M55 26.5 L54.5 35 L47 32 Z')}`,
+};
+const iconSvg = (k) => `<svg class="ico" viewBox="0 0 64 40" aria-hidden="true">${ICONS[k]}</svg>`;
+const KEYS = { lift: ['SPACE', 'wide'], boost: ['→', ''], roll: ['R', ''], flip: ['R', ''], turn: ['E', ''] };
+function paintButton(id, ico, name, hint) {
+  const [k, cls] = KEYS[ico];
+  $(id).innerHTML = `${iconSvg(ico)}<span class="nm">${name}</span>${DESK ? `<kbd class="kc ${cls}">${k}</kbd>` : `<small>${hint}</small>`}`;
+}
+document.querySelectorAll('.how b[data-ico]').forEach((b) => b.insertAdjacentHTML('afterbegin', iconSvg(b.dataset.ico)));
 // ---------------- input ----------------
 const input = { lift: false, boost: false, rollQueued: false, turnQueued: false, any: false };
 function hold(el, key) {
@@ -498,14 +522,11 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('keyup', (e) => { if (keys[e.code]) input[keys[e.code]] = false; });
 function labelButtons(level) {
-  const roll = level === 2 ? 'FLIP' : 'ROLL';
-  $('bRoll').firstChild.textContent = roll;
-  $('bLift').firstChild.textContent = 'LIFT';
-  $('bLift').querySelector('small').textContent = DESK ? 'HOLD SPACE' : 'HOLD';
-  $('bBoost').querySelector('small').textContent = DESK ? 'HOLD →' : 'HOLD';
-  $('bRoll').querySelector('small').textContent = DESK ? 'PRESS R' : level === 2 ? 'UPRIGHT' : 'STYLE';
+  paintButton('bRoll', level === 2 ? 'flip' : 'roll', level === 2 ? 'FLIP' : 'ROLL', level === 2 ? 'UPRIGHT' : 'STYLE');
+  paintButton('bTurn', 'turn', 'ROLL', 'FACE FRONT');
+  paintButton('bLift', 'lift', 'LIFT', 'HOLD');
+  paintButton('bBoost', 'boost', 'BOOST', 'HOLD');
   $('bTurn').style.display = level === 2 ? 'flex' : 'none';
-  $('bTurn').querySelector('small').textContent = DESK ? 'PRESS E' : 'FACE FRONT';
   $('ctrl').classList.toggle('four', level === 2);
 }
 
