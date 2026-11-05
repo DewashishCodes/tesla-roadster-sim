@@ -179,7 +179,23 @@ function buildCar() {
   const cp = [];
   const cr = XS.filter((x) => x <= 1.02 && x >= -1.32).map((x) => { const h = half(x), a = h[6], b = h[7], c = h[8], st = [a[0] + (b[0] - a[0]) * .35, a[1] + (b[1] - a[1]) * .35], k = 1.012; return [V(x, st[1] + .012, -st[0] * k), V(x, b[1] + .012, -b[0] * k), V(x, c[1] + .012, 0), V(x, b[1] + .012, b[0] * k), V(x, st[1] + .012, st[0] * k)]; });
   for (let s = 0; s < cr.length - 1; s++) for (let i = 0; i < 4; i++) { const a = cr[s][i], b = cr[s + 1][i], c = cr[s + 1][i + 1], d = cr[s][i + 1]; cp.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z, a.x, a.y, a.z, c.x, c.y, c.z, d.x, d.y, d.z); }
-  body.add(new THREE.Mesh(mk(cp), M.glass));
+  // the canopy gets its own material so driver view can make just this car's glass see-through
+  const canopy = new THREE.Mesh(mk(cp), M.glass.clone());
+  body.add(canopy);
+  // cabin, seen from the driver's seat: dash, screen, yoke, A-pillars, roof header
+  const cabin = new THREE.Group();
+  box(.42, .12, 1.5, M.lower, .62, .62, 0, cabin);
+  const scr = box(.02, .17, .36, glow(0x163a57), .45, .76, .02, cabin); scr.rotation.z = .35;
+  box(.022, .012, .3, glow(0x7fc6ff), .452, .8, .02, cabin).rotation.z = .35;
+  const yoke = new THREE.Group(); yoke.position.set(.28, .7, .3); yoke.rotation.z = .35;
+  box(.03, .05, .34, M.dark, 0, 0, 0, yoke); box(.03, .16, .05, M.dark, 0, .06, .16, yoke); box(.03, .16, .05, M.dark, 0, .06, -.16, yoke);
+  box(.05, .06, .08, M.lower, .03, -.02, 0, yoke);
+  cabin.add(yoke);
+  const strut = (a, b, r = .025) => { const d = b.clone().sub(a); const m = new THREE.Mesh(new THREE.BoxGeometry(r, d.length(), r), M.dark); m.position.copy(a).add(b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); cabin.add(m); };
+  for (const s of [1, -1]) strut(V(.98, .84, .62 * s), V(.18, 1.1, .47 * s), .045);
+  box(.06, .04, .94, M.dark, .18, 1.1, 0, cabin);
+  box(.05, .04, 1.24, M.dark, .98, .84, 0, cabin);
+  car.add(cabin);
   box(.03, .022, 1.62, M.white, 2.215, .55, 0, body);
   box(.03, .03, 1.74, M.red, -2.225, .8, 0, body);
   for (const z of [.22, -.22, .58, -.58]) {
@@ -206,9 +222,9 @@ function buildCar() {
     f.geometry.translate(0, -.5, 0); f.rotation.z = -Math.PI / 2; f.position.set(-2.25, .42, z); f.scale.set(1, 0, 1);
     car.add(f); flames.push(f);
   }
-  return { car, wheels, flames };
+  return { car, wheels, flames, canopy };
 }
-const { car, wheels, flames } = buildCar();
+const { car, wheels, flames, canopy } = buildCar();
 scene.add(car);
 // nozzles in car space: corner jets point down, rear jets point back
 const NOZ = {
