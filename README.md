@@ -57,4 +57,4 @@ three.js loads from a CDN (jsDelivr, pinned to 0.169.0).
 
 ## License
 
-MIT
+The code is MIT licensed. The mascot artwork (`mascot.png`), the dewashish.ai name and the branding are not covered by MIT: all rights reserved. If you fork this, swap in your own. See [LICENSE](LICENSE).
