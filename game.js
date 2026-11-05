@@ -579,7 +579,7 @@ function finish(kind, title, scoreLines = null, score = 0) {
   document.querySelectorAll('.pickl').forEach((b) => b.classList.toggle('cur', +b.dataset.l === s.level));
   refreshBests();
   // the card is the result screen: draw it while the crash or landing plays out, then show it
-  lastResult.blob = null; $('cardImg').removeAttribute('src'); $('cardWait').style.display = 'block';
+  lastResult.blob = null; $('cardImg').removeAttribute('src'); $('cardWait').style.display = 'flex';
   const cardReady = makeCard().then((b) => { lastResult.blob = b; $('cardImg').src = URL.createObjectURL(b); $('cardWait').style.display = 'none'; });
   setTimeout(() => { $('end').classList.remove('hide'); $('ctrl').style.display = 'none'; $('hud').style.display = 'none'; $('credits').classList.remove('hide'); }, kind === 'ok' ? 1300 : 2600);
   return cardReady;

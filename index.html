@@ -60,7 +60,24 @@
   #cardWrap { position: relative; width: 100%; display: flex; justify-content: center; margin-bottom: 14px; }
   #cardImg { height: min(58vh, 640px); aspect-ratio: 9 / 16; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 0 1px #2a2d33; background: #07080b; object-fit: cover; }
   #cardImg:not([src]) { opacity: 0; }
-  #cardWait { position: absolute; top: 45%; color: var(--grey); font-size: 12px; }
+  #cardWait { position: absolute; top: 34%; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--grey); font-size: 12px; }
+  /* loader: lift off on the jets, flip, land soft in a puff, repeat */
+  .ldr-car { transform-box: view-box; transform-origin: 102px 76px; animation: ldr-car 2.2s cubic-bezier(.45,0,.3,1) infinite; }
+  .ldr-jets { fill: #cfe8ff; opacity: 0; transform-box: view-box; transform-origin: 100px 84px; animation: ldr-jets 2.2s ease-in-out infinite; }
+  .ldr-puff { fill: #d9dde2; opacity: 0; transform-box: view-box; transform-origin: 102px 101px; animation: ldr-puff 2.2s ease-out infinite; }
+  @keyframes ldr-car {
+    0% { transform: translateY(0) rotate(0) scaleY(1); }
+    14% { transform: translateY(-30px) rotate(0) scaleY(1); }
+    36% { transform: translateY(-50px) rotate(360deg) scaleY(1); }
+    /* barrel roll seen side-on: the car turns onto its roof and back about its long axis */
+    46% { transform: translateY(-50px) rotate(360deg) scaleY(-1); }
+    56% { transform: translateY(-48px) rotate(360deg) scaleY(1); }
+    76% { transform: translateY(-4px) rotate(360deg) scaleY(1); }
+    81% { transform: translateY(0) rotate(360deg) scale(1.06, .9); }
+    89%, 100% { transform: translateY(0) rotate(360deg) scale(1, 1); }
+  }
+  @keyframes ldr-jets { 0%, 4% { opacity: 0; transform: scaleY(.3); } 10%, 18% { opacity: .85; transform: translateY(0) scaleY(1.2); } 26%, 60% { opacity: 0; } 66%, 76% { opacity: .8; transform: translateY(-6px) scaleY(1); } 83%, 100% { opacity: 0; } }
+  @keyframes ldr-puff { 0%, 76% { opacity: 0; transform: scale(.4); } 84% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5, 1.1); } }  @media (prefers-reduced-motion: reduce) { .ldr-car, .ldr-jets, .ldr-puff { animation: none; } .ldr-puff { opacity: .6; } }
   #end .levels { max-width: 460px; margin: 0 auto; width: 100%; }
   @media (min-aspect-ratio: 1/1) and (min-width: 820px) { #end { flex-direction: row; align-items: center; justify-content: center; gap: 48px; } #cardWrap { width: auto; margin: 0; } #cardImg { height: min(82vh, 760px); } #end .levels { margin: 0; } #end .fine { display: none; } }
   #credits { position: fixed; top: max(14px, env(safe-area-inset-top)); right: 14px; z-index: 20; display: flex; gap: 8px; align-items: center; }
@@ -152,7 +169,23 @@
 </div>
 
 <div class="screen hide" id="end">
-  <div id="cardWrap"><img id="cardImg" alt="Your score card"><div id="cardWait" class="mono">Drawing your card...</div></div>
+  <div id="cardWrap"><img id="cardImg" alt="Your score card"><div id="cardWait" role="status" aria-live="polite">
+    <svg class="ldr" viewBox="0 0 200 120" width="200" height="120" aria-hidden="true">
+      <g class="ldr-jets"><ellipse cx="78" cy="96" rx="7" ry="12"/><ellipse cx="122" cy="96" rx="7" ry="12"/></g>
+      <g class="ldr-car">
+        <path d="M58 84 L66 74 L88 70 L104 62 L124 62 L138 70 L146 74 L146 84 Z" fill="#edeef0"/>
+        <path d="M90 70 L104 63 L123 63 L134 70 Z" fill="#0b0d10"/>
+        <rect x="58" y="80" width="88" height="5" fill="#141518"/>
+        <rect x="56.5" y="76" width="3" height="3" fill="#ff2a1f"/>
+        <rect x="145" y="77" width="2.5" height="2" fill="#ffffff"/>
+        <circle cx="74" cy="86" r="6" fill="#111"/><circle cx="74" cy="86" r="3" fill="#3a3d43"/>
+        <circle cx="130" cy="86" r="6" fill="#111"/><circle cx="130" cy="86" r="3" fill="#3a3d43"/>
+      </g>
+      <g class="ldr-puff"><circle cx="70" cy="100" r="9"/><circle cx="86" cy="102" r="11"/><circle cx="104" cy="101" r="12"/><circle cx="122" cy="102" r="10"/><circle cx="136" cy="100" r="8"/></g>
+      <rect x="20" y="104" width="160" height="2" rx="1" fill="#ff2a1f"/>
+    </svg>
+    <div class="mono">Drawing your card...</div>
+  </div></div>
   <div class="oldres"><div class="kicker mono" id="eKick">Result</div><h1 id="eTitle">Landed</h1><div class="big" id="eScore">0</div><div class="lines" id="eLines"></div></div>
   <div class="levels">
     <button class="cta alt" id="again">Fly again</button>
@@ -170,6 +203,6 @@
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
 </script>
-<script type="module" src="./game.js?v=17"></script>
+<script type="module" src="./game.js?v=18"></script>
 </body>
 </html>
