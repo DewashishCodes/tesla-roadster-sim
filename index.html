@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Flying Roadster Sim</title>
+<meta name="description" content="You get 8 seconds of air. Jump five cars. Land it soft. A fan-made sim by @dewashish.ai">
+<meta name="theme-color" content="#050608">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --red: #ff3b2f; --ink: #eceef1; --grey: #a3a8b0; --bg: #050608; --ice: #9fd3ff; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; font-family: 'IBM Plex Sans', system-ui, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #game { position: fixed; inset: 0; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+  /* HUD */
+  #hud { position: fixed; left: 0; right: 0; top: 0; padding: max(14px, env(safe-area-inset-top)) 18px 0; pointer-events: none; }
+  #hud .row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  #hud .lab { font-size: 11px; color: var(--grey); }
+  #hud .val { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  #air { height: 8px; background: #22252b; margin-top: 10px; border-radius: 4px; overflow: hidden; }
+  #airfill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--ice), #fff); transition: background .2s; }
+  #airfill.low { background: linear-gradient(90deg, var(--red), #ff8a80); }
+  #toast { position: fixed; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; font-weight: 700; color: var(--ink); text-shadow: 0 2px 20px #000; pointer-events: none; opacity: 0; transition: opacity .25s; }
+  /* controls */
+  #ctrl { position: fixed; left: 0; right: 0; bottom: 0; padding: 0 14px max(16px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  #ctrl.four { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; } #ctrl.four .btn { font-size: 15px; }
+  .btn { height: 92px; border-radius: 18px; border: 1.5px solid #3a3e46; background: rgba(20,22,26,.72); backdrop-filter: blur(6px); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-weight: 700; font-size: 17px; touch-action: none; }
+  .btn small { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--grey); letter-spacing: .1em; font-weight: 400; }
+  .btn.on { border-color: var(--red); background: rgba(255,59,47,.22); }
+  .btn.lift { border-color: #5a5f68; }
+  /* screens */
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px 22px max(28px, env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(5,6,8,0) 25%, rgba(5,6,8,.86) 58%, rgba(5,6,8,.97)); }
+  .screen.hide { display: none; }
+  .bar { width: 64px; height: 6px; background: var(--red); margin-bottom: 14px; }
+  .kicker { color: var(--red); font-size: 12px; margin-bottom: 8px; }
+  h1 { font-size: 44px; line-height: 1.02; margin: 0 0 12px; letter-spacing: -.02em; }
+  p { color: var(--grey); font-size: 16px; line-height: 1.45; margin: 0 0 8px; max-width: 520px; }
+  .how { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 14px 0 18px; font-size: 14px; color: var(--ink); }
+  .how b { font-family: 'IBM Plex Mono', monospace; color: var(--red); font-weight: 500; font-size: 12px; padding-top: 2px; }
+  .cta { min-height: 58px; padding: 8px 12px; border-radius: 16px; border: none; background: var(--red); color: #fff; font-weight: 700; font-size: 18px; font-family: inherit; }
+  .levels { display: grid; gap: 10px; } .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; }
+  .cta small { font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 11px; letter-spacing: .06em; opacity: .85; }
+  .cta.alt { background: rgba(255,255,255,.06); border: 1.5px solid #3a3e46; color: var(--ink); }
+  .cta.alt small { color: var(--grey); }
+  #mute { pointer-events: auto; background: none; border: 1px solid #3a3e46; color: var(--grey); font-size: 10px; padding: 4px 8px; border-radius: 6px; }
+  .fine { font-size: 11px; color: #6f747c; margin-top: 14px; line-height: 1.5; }
+  .big { font-size: 64px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1; margin: 4px 0 6px; }
+  .lines { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--grey); margin: 10px 0 18px; line-height: 1.8; }
+  .lines span { color: var(--ink); float: right; }
+  .handle { font-family: 'IBM Plex Mono', monospace; color: var(--ink); opacity: .55; font-size: 13px; letter-spacing: .1em; }
+  .key { display: none; margin-left: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 2px 7px; border: 1px solid #4a4e56; border-radius: 6px; color: var(--ink); letter-spacing: .06em; }
+  .deskonly { display: none; }
+  body.desk .key { display: inline-block; } body.desk .deskonly { display: inline; }
+  @media (min-width: 700px) { .screen { align-items: center; text-align: left; } .screen > * { width: 100%; max-width: 460px; } }
+</style>
+</head>
+<body>
+<div id="game"></div>
+<canvas id="streaks" style="position:fixed;inset:0;pointer-events:none"></canvas>
+<div id="boostTag" class="mono" style="position:fixed;left:50%;top:22%;transform:translateX(-50%);color:var(--red);font-size:14px;letter-spacing:.3em;font-weight:500;opacity:0;transition:opacity .15s;pointer-events:none;text-shadow:0 0 18px rgba(255,59,47,.8)">BOOST</div>
+
+<div id="hud" style="display:none">
+  <div class="row">
+    <div><div class="lab mono">Air left</div><div class="val" id="airv">250 kg</div></div>
+    <div style="text-align:center"><div class="lab mono">Height</div><div class="val" id="hv">0 ft</div></div>
+    <div style="text-align:right"><div class="lab mono">Speed</div><div class="val" id="sv">0 mph</div></div>
+  </div>
+  <div id="air"><div id="airfill"></div></div>
+  <div class="row" style="margin-top:8px"><div class="lab mono" id="best"></div><button id="mute" class="mono">Sound on</button></div>
+</div>
+<div id="toast"></div>
+<div id="flash" style="position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center, rgba(255,59,47,0) 30%, rgba(255,59,47,.85) 100%)"></div>
+
+<div id="ctrl" style="display:none">
+  <div class="btn" id="bRoll">ROLL<small>STYLE</small></div>
+  <div class="btn" id="bTurn" style="display:none">ROLL<small>FACE FRONT</small></div>
+  <div class="btn lift" id="bLift">LIFT<small>HOLD</small></div>
+  <div class="btn" id="bBoost">BOOST<small>HOLD</small></div>
+</div>
+
+<div class="screen" id="start">
+  <div class="bar"></div>
+  <div class="kicker mono">Fan-made sim · @dewashish.ai</div>
+  <h1>Flying Roadster Sim</h1>
+  <p>Cold-gas thrusters, 250 kg of compressed air, about 8 seconds of hover. Two stunts from the real reveal. Can you stick both?</p>
+  <div class="how">
+    <b>LIFT</b><div>Hold to fire the corner jets. Burns air fast.<span class="key">Space</span></div>
+    <b>BOOST</b><div>Hold to fire the rear jets for speed.<span class="key">Right arrow</span></div>
+    <b>ROLL</b><div>Tap for a barrel roll. Upside down, LIFT pushes you down.<span class="key">R</span></div>
+    <b>FLIP</b><div>On The Ramp the same button turns you upright after you let go of the wall.</div>
+    <b>ROLL</b><div>On The Ramp, a half barrel roll that turns the nose forward, so BOOST pushes you away from the wall.<span class="key">E</span></div>
+  </div>
+  <div class="levels">
+    <button class="cta" id="play">1 · The Kickflip<small id="best1">Jump all five cars, land it soft</small></button>
+    <button class="cta alt" id="play2">2 · The Ramp<small id="best2">Hang off the wall, let go, flip, land</small></button>
+    <button class="cta alt" id="play3">3 · Endless<small id="best3">Cars, trucks, containers, bridges, trenches. How far?</small></button>
+  </div>
+  <div class="fine"><span class="deskonly">Press Enter to play. </span>Fan-made explainer toy. Not affiliated with or endorsed by Tesla. Physics simplified.</div>
+</div>
+
+<div class="screen hide" id="end">
+  <div class="bar"></div>
+  <div class="kicker mono" id="eKick">Result</div>
+  <h1 id="eTitle">Landed</h1>
+  <div class="big" id="eScore">0</div>
+  <div class="lines" id="eLines"></div>
+  <div class="levels">
+    <button class="cta" id="again">Fly again</button>
+    <div class="two"><button class="cta alt" id="share">Share score</button><button class="cta alt" id="other">Other level</button></div>
+  </div>
+  <div class="fine"><span class="handle">@dewashish.ai</span> &nbsp;Share your card and tag me.<br>Fan-made. Not affiliated with Tesla.</div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+</script>
+<script type="module" src="./game.js?v=8"></script>
+</body>
+</html>
