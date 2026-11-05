@@ -1234,7 +1234,13 @@ function frame(dt) {
   if (inside) {
     camera.quaternion.copy(s.q).multiply(POV_Q);
     camera.position.copy(HEAD).applyQuaternion(s.q).add(new THREE.Vector3(s.x, s.y, 0));
+    // jolt: a thump on touchdown (scaled by how hard you came down) plus a buzz while boosting
+    if (s.ground && s.wasAir) s.jolt = Math.min(1, Math.abs(s.pvy || 0) / 6);
+    s.jolt = (s.jolt || 0) * Math.exp(-dt * 6);
+    const sh = s.jolt * .07 + (s.bAmt || 0) * .012;
+    if (sh > .001) camera.position.add(new THREE.Vector3(rnd(), rnd(), rnd()).multiplyScalar(sh));
   }
+  s.wasAir = !s.ground; if (!s.ground) s.pvy = s.vy;
   const airborne = s.phase === 'play' && !s.ground && s.y > .5 && !s.cr;
   ring.visible = inside && airborne;
   if (ring.visible) {
