@@ -1181,6 +1181,9 @@ const camPos = new THREE.Vector3(-4, 4, 17), camLook = new THREE.Vector3();
 let pov = store.get('rs-pov') === true;
 const HEAD = new THREE.Vector3(-.05, 1.03, .3);
 const POV_Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -.05));
+// touchdown ring: where you will land if you stop thrusting now, so landings can be judged from inside
+const ringM = new THREE.MeshBasicMaterial({ color: RED, transparent: true, opacity: .8, depthWrite: false }); ringM.toneMapped = false;
+const ring = new THREE.Mesh(new THREE.RingGeometry(.85, 1.08, 48), ringM); ring.rotation.x = -Math.PI / 2; ring.visible = false; scene.add(ring);
 const povOn = (s) => pov && s.phase !== 'idle' && !(s.cr && s.cr.t > .35);
 function setPov(v) { pov = v; store.set('rs-pov', v); $('cam').textContent = v ? 'Chase view' : 'Driver view'; toast(v ? 'Driver view' : 'Chase view', 700); }
 $('cam').addEventListener('click', (e) => { e.stopPropagation(); setPov(!pov); });
@@ -1231,6 +1234,14 @@ function frame(dt) {
   if (inside) {
     camera.quaternion.copy(s.q).multiply(POV_Q);
     camera.position.copy(HEAD).applyQuaternion(s.q).add(new THREE.Vector3(s.x, s.y, 0));
+  }
+  const airborne = s.phase === 'play' && !s.ground && s.y > .5 && !s.cr;
+  ring.visible = inside && airborne;
+  if (ring.visible) {
+    const tl = (s.vy + Math.sqrt(s.vy * s.vy + 2 * G * s.y)) / G; // ballistic time to the ground
+    ring.position.set(s.x + s.vx * tl, .04, 0);
+    const k = 1 + Math.min(2, s.y * .15); ring.scale.set(k, k, k);
+    ringM.opacity = .45 + .4 * Math.sin(performance.now() / 120) ** 2;
   }
   // boost kick: the view widens while the rear jets fire, so the speed reads
   s.fovKick = (s.fovKick || 0) + ((s.boosting && s.phase === 'play' ? 9 : 0) - (s.fovKick || 0)) * (1 - Math.exp(-dt * 5));
