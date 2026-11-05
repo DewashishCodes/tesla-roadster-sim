@@ -59,6 +59,7 @@
   .cta small { font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 11px; letter-spacing: .06em; opacity: .85; }
   .cta.alt { background: rgba(255,255,255,.06); border: 1.5px solid #3a3e46; color: var(--ink); }
   .cta.alt small { color: var(--grey); }
+  #cam { pointer-events: auto; background: rgba(255,59,47,.15); border: 1px solid var(--red); color: var(--ink); font-size: 10px; padding: 4px 8px; border-radius: 6px; }
   #mute { pointer-events: auto; background: none; border: 1px solid #3a3e46; color: var(--grey); font-size: 10px; padding: 4px 8px; border-radius: 6px; }
   /* result screen: the score card is the result */
   #end { justify-content: flex-start; padding-top: max(60px, env(safe-area-inset-top)); background: rgba(5,6,8,.94); }
@@ -126,7 +127,7 @@
     <div style="text-align:right"><div class="lab mono">Speed</div><div class="val" id="sv">0 mph</div></div>
   </div>
   <div id="air"><div id="airfill"></div></div>
-  <div class="row" style="margin-top:8px"><div class="lab mono" id="best"></div><button id="mute" class="mono">Sound on</button></div>
+  <div class="row" style="margin-top:8px"><div class="lab mono" id="best"></div><div style="display:flex;gap:6px"><button id="cam" class="mono">Driver view</button><button id="mute" class="mono">Sound on</button></div></div>
 </div>
 <div id="toast"></div>
 <div id="flash" style="position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center, rgba(255,59,47,0) 30%, rgba(255,59,47,.85) 100%)"></div>
@@ -209,6 +210,6 @@
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
 </script>
-<script type="module" src="./game.js?v=20"></script>
+<script type="module" src="./game.js?v=22"></script>
 </body>
 </html>

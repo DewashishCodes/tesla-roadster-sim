@@ -184,10 +184,10 @@ function buildCar() {
   body.add(canopy);
   // cabin, seen from the driver's seat: dash, screen, yoke, A-pillars, roof header
   const cabin = new THREE.Group();
-  box(.42, .12, 1.5, M.lower, .62, .62, 0, cabin);
-  const scr = box(.02, .17, .36, glow(0x163a57), .45, .76, .02, cabin); scr.rotation.z = .35;
-  box(.022, .012, .3, glow(0x7fc6ff), .452, .8, .02, cabin).rotation.z = .35;
-  const yoke = new THREE.Group(); yoke.position.set(.28, .7, .3); yoke.rotation.z = .35;
+  box(.34, .06, 1.5, M.lower, .66, .6, 0, cabin);
+  const scr = box(.015, .1, .24, glow(0x163a57), .5, .67, .02, cabin); scr.rotation.z = .4;
+  box(.016, .008, .2, glow(0x7fc6ff), .502, .69, .02, cabin).rotation.z = .4;
+  const yoke = new THREE.Group(); yoke.position.set(.36, .63, .3); yoke.rotation.z = .4;
   box(.03, .05, .34, M.dark, 0, 0, 0, yoke); box(.03, .16, .05, M.dark, 0, .06, .16, yoke); box(.03, .16, .05, M.dark, 0, .06, -.16, yoke);
   box(.05, .06, .08, M.lower, .03, -.02, 0, yoke);
   cabin.add(yoke);
@@ -196,7 +196,7 @@ function buildCar() {
   box(.06, .04, .94, M.dark, .18, 1.1, 0, cabin);
   box(.05, .04, 1.24, M.dark, .98, .84, 0, cabin);
   car.add(cabin);
-  box(.03, .022, 1.62, M.white, 2.215, .55, 0, body);
+  const headbar = box(.03, .022, 1.62, M.white, 2.215, .55, 0, body);
   box(.03, .03, 1.74, M.red, -2.225, .8, 0, body);
   for (const z of [.22, -.22, .58, -.58]) {
     const r = new THREE.Mesh(new THREE.TorusGeometry(.06, .016, 10, 28), M.bronze); r.position.set(-2.235, .42, z); r.rotation.y = Math.PI / 2; body.add(r);
@@ -222,9 +222,9 @@ function buildCar() {
     f.geometry.translate(0, -.5, 0); f.rotation.z = -Math.PI / 2; f.position.set(-2.25, .42, z); f.scale.set(1, 0, 1);
     car.add(f); flames.push(f);
   }
-  return { car, wheels, flames, canopy };
+  return { car, wheels, flames, canopy, headbar };
 }
-const { car, wheels, flames, canopy } = buildCar();
+const { car, wheels, flames, canopy, headbar } = buildCar();
 scene.add(car);
 // nozzles in car space: corner jets point down, rear jets point back
 const NOZ = {
@@ -1177,6 +1177,15 @@ function streaks(k, dt) {
 
 // ---------------- HUD + camera + render ----------------
 const camPos = new THREE.Vector3(-4, 4, 17), camLook = new THREE.Vector3();
+// driver POV (experimental): the camera sits at the driver's head and turns with the car, rolls and all
+let pov = store.get('rs-pov') === true;
+const HEAD = new THREE.Vector3(-.05, 1.03, .3);
+const POV_Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -.05));
+const povOn = (s) => pov && s.phase !== 'idle' && !(s.cr && s.cr.t > .35);
+function setPov(v) { pov = v; store.set('rs-pov', v); $('cam').textContent = v ? 'Chase view' : 'Driver view'; toast(v ? 'Driver view' : 'Chase view', 700); }
+$('cam').addEventListener('click', (e) => { e.stopPropagation(); setPov(!pov); });
+window.addEventListener('keydown', (e) => { if (e.code === 'KeyC') setPov(!pov); });
+$('cam').textContent = pov ? 'Chase view' : 'Driver view';
 function frame(dt) {
   const s = state;
   car.position.set(s.x, s.y, 0);
@@ -1216,9 +1225,16 @@ function frame(dt) {
   camera.position.copy(camPos);
   if (s.cr && s.cr.shake > .02) camera.position.add(new THREE.Vector3(rnd(), rnd(), rnd() * .5).multiplyScalar(s.cr.shake * 1.1));
   camera.lookAt(camLook);
+  const inside = povOn(s);
+  headbar.visible = !inside; // the nose light bar would glare across the view from inside
+  canopy.material.transparent = inside; canopy.material.opacity = inside ? .12 : 1; canopy.material.depthWrite = !inside;
+  if (inside) {
+    camera.quaternion.copy(s.q).multiply(POV_Q);
+    camera.position.copy(HEAD).applyQuaternion(s.q).add(new THREE.Vector3(s.x, s.y, 0));
+  }
   // boost kick: the view widens while the rear jets fire, so the speed reads
   s.fovKick = (s.fovKick || 0) + ((s.boosting && s.phase === 'play' ? 9 : 0) - (s.fovKick || 0)) * (1 - Math.exp(-dt * 5));
-  const baseFov = portrait ? 62 : 40;
+  const baseFov = inside ? (portrait ? 76 : 62) : (portrait ? 62 : 40);
   if (Math.abs(camera.fov - baseFov - s.fovKick) > .05) { camera.fov = baseFov + s.fovKick; camera.updateProjectionMatrix(); }
   $('airv').textContent = `${Math.round(s.air)} kg`;
   $('hv').textContent = `${Math.round(Math.max(0, s.y) * 3.281)} ft`;
