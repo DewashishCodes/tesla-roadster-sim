@@ -55,6 +55,11 @@
   #mute { pointer-events: auto; background: none; border: 1px solid #3a3e46; color: var(--grey); font-size: 10px; padding: 4px 8px; border-radius: 6px; }
   #credits { position: fixed; top: max(14px, env(safe-area-inset-top)); right: 14px; z-index: 20; display: flex; gap: 8px; align-items: center; }
   #credits.hide { display: none; }
+  .tip { position: relative; }
+  .tip::after { content: attr(data-tip); position: absolute; top: calc(100% + 10px); right: 0; white-space: nowrap; padding: 7px 11px; border-radius: 9px; background: #eceef1; color: #0b0c0e; font: 600 12px 'IBM Plex Sans', sans-serif; opacity: 0; transform: translateY(-4px); transition: opacity .15s, transform .15s; pointer-events: none; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+  .tip::before { content: ''; position: absolute; top: calc(100% + 5px); right: 14px; border: 5px solid transparent; border-bottom-color: #eceef1; border-top: 0; opacity: 0; transition: opacity .15s; }
+  .tip:hover::after, .tip:focus-visible::after { opacity: 1; transform: none; } .tip:hover::before, .tip:focus-visible::before { opacity: 1; }
+  #me[aria-expanded="true"]::after, #me[aria-expanded="true"]::before { display: none; }
   .pill { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid #3a3e46; background: rgba(20,22,26,.75); backdrop-filter: blur(6px); color: var(--ink); font: 600 13px 'IBM Plex Sans', sans-serif; text-decoration: none; cursor: pointer; }
   .pill:hover { border-color: var(--red); }
   .pill.av { padding: 0; width: 36px; justify-content: center; overflow: hidden; }
@@ -101,11 +106,11 @@
 </div>
 
 <div id="credits">
-  <a class="pill" id="star" href="https://github.com/DewashishCodes/tesla-roadster-sim" target="_blank" rel="noopener" aria-label="Star this game on GitHub">
+  <a class="pill tip" data-tip="Enjoying it? Show some love with a star" id="star" href="https://github.com/DewashishCodes/tesla-roadster-sim" target="_blank" rel="noopener" aria-label="Star this game on GitHub">
     <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
     <span>Star</span>
   </a>
-  <button class="pill av" id="me" aria-label="Contact the maker" aria-expanded="false"><img src="mascot.png" alt="" width="30" height="30"></button>
+  <button class="pill av tip" data-tip="Get to know me" id="me" aria-label="Contact the maker" aria-expanded="false"><img src="mascot.png" alt="" width="30" height="30"></button>
   <div id="card" role="dialog" aria-label="Contact">
     <img src="mascot.png" alt="Dewashish mascot" width="56" height="56">
     <div class="who">Made by Dewashish</div>
