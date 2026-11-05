@@ -160,6 +160,46 @@ function half(x) {
   const hl = .9 - .24 * a, fl = Math.min(ys - .03, .36 + (ys - .36) * a);
   return [[0, yb], [hl - .05, yb], [hl, yb + .05], [hl, fl], [hw, fl + .005], [hw, ys], [hw - .06, ys + .045], [tw, Math.max(ys + .05, yt - .02)], [0, yt]];
 }
+// cabin materials and the two screens (canvas textures): a live instrument cluster and a maker panel
+const CAB = (() => {
+  const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  const screen = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; const m = new THREE.MeshBasicMaterial({ map: t }); m.toneMapped = false; return { t, m }; };
+  const clu = mkCanvas(512, 188), cen = mkCanvas(512, 286);
+  const cs = screen(clu), ms = screen(cen);
+  // centre screen: who made this, with the mascot
+  const avatar = new Image(); avatar.src = 'mascot.png';
+  function drawMaker() {
+    const g = cen.getContext('2d'), W = cen.width, H = cen.height;
+    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0b0f15'); bg.addColorStop(1, '#05070a');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#ff3b2f'; g.fillRect(28, 26, 44, 5);
+    g.fillStyle = '#7d828a'; g.font = '500 17px "IBM Plex Mono", monospace'; g.fillText('NOW DRIVING · FLYING ROADSTER SIM', 28, 58);
+    if (avatar.complete && avatar.naturalWidth) { g.save(); g.beginPath(); g.arc(92, 156, 62, 0, Math.PI * 2); g.clip(); g.drawImage(avatar, 30, 94, 124, 124); g.restore(); }
+    g.strokeStyle = '#ff3b2f'; g.lineWidth = 4; g.beginPath(); g.arc(92, 156, 63, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = '#eceef1'; g.font = '700 44px Caveat, cursive'; g.fillText('Made by Dewashish', 176, 148);
+    g.fillStyle = '#a3a8b0'; g.font = '500 24px "IBM Plex Mono", monospace'; g.fillText('@dewashish.ai', 182, 190);
+    g.fillStyle = '#ff3b2f'; g.font = '600 18px "IBM Plex Sans", sans-serif'; g.fillText('Follow for more teardowns', 182, 226);
+    g.fillStyle = '#ff2a1f'; g.fillRect(0, H - 6, W, 6);
+    ms.t.needsUpdate = true;
+  }
+  drawMaker(); avatar.onload = drawMaker; document.fonts?.ready.then(drawMaker);
+  // instrument cluster: speed, height and air, redrawn while you drive
+  function drawCluster(s) {
+    const g = clu.getContext('2d'), W = clu.width, H = clu.height;
+    g.fillStyle = '#05080c'; g.fillRect(0, 0, W, H);
+    const mph = Math.round(Math.hypot(s.vx, s.vy) * 2.237);
+    g.fillStyle = s.boosting ? '#ff3b2f' : '#eceef1'; g.font = '700 92px "IBM Plex Sans", sans-serif'; g.fillText(String(mph), 26, 110);
+    g.fillStyle = '#7d828a'; g.font = '500 20px "IBM Plex Mono", monospace'; g.fillText('MPH', 30, 146);
+    g.fillText(`${Math.round(Math.max(0, s.y) * 3.281)} FT`, 300, 56);
+    g.fillText(`AIR ${Math.round(s.air)} KG`, 300, 96);
+    g.fillStyle = '#22252b'; g.fillRect(300, 116, 180, 14);
+    g.fillStyle = s.air < 60 ? '#ff3b2f' : '#9fd3ff'; g.fillRect(300, 116, 180 * s.air / AIR0, 14);
+    if (s.boosting) { g.fillStyle = '#ff3b2f'; g.font = '500 18px "IBM Plex Mono", monospace'; g.fillText('BOOST', 300, 160); }
+    cs.t.needsUpdate = true;
+  }
+  return { trim: std(0x16171a, { roughness: .8 }), pad: std(0x2a2c31, { roughness: .6 }), glove: std(0x34363b, { roughness: .9 }), clusterMat: cs.m, mapMat: ms.m, drawCluster };
+})();
+
 function buildCar() {
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
   const XS = Array.from({ length: 48 }, (_, i) => 2.22 - 4.44 * i / 47);
@@ -182,19 +222,40 @@ function buildCar() {
   // the canopy gets its own material so driver view can make just this car's glass see-through
   const canopy = new THREE.Mesh(mk(cp), M.glass.clone());
   body.add(canopy);
-  // cabin, seen from the driver's seat: dash, screen, yoke, A-pillars, roof header
+  // cabin, seen from the driver's seat (driver on the +z side). It also closes the shell so the
+  // road and wheels can't be seen through the body from inside.
   const cabin = new THREE.Group();
-  box(.34, .06, 1.5, M.lower, .66, .6, 0, cabin);
-  const scr = box(.015, .1, .24, glow(0x163a57), .5, .67, .02, cabin); scr.rotation.z = .4;
-  box(.016, .008, .2, glow(0x7fc6ff), .502, .69, .02, cabin).rotation.z = .4;
-  const yoke = new THREE.Group(); yoke.position.set(.36, .63, .3); yoke.rotation.z = .4;
-  box(.03, .05, .34, M.dark, 0, 0, 0, yoke); box(.03, .16, .05, M.dark, 0, .06, .16, yoke); box(.03, .16, .05, M.dark, 0, .06, -.16, yoke);
-  box(.05, .06, .08, M.lower, .03, -.02, 0, yoke);
+  const trim = CAB.trim, pad = CAB.pad, red = M.red;
+  box(1.7, .04, 1.6, trim, .05, .2, 0, cabin); // floor
+  box(.06, .62, 1.62, trim, .98, .5, 0, cabin); // firewall
+  box(.45, .36, 1.62, trim, .77, .66, 0, cabin); // dash body
+  box(.47, .03, 1.64, pad, .77, .855, 0, cabin); // dash top pad
+  box(.012, .01, 1.5, red, .545, .8, 0, cabin); // ambient strip, the event red
+  // live instrument screen behind the yoke
+  const clu = new THREE.Group(); clu.position.set(.6, .91, .44); clu.rotation.z = .3;
+  const cluP = new THREE.Mesh(new THREE.PlaneGeometry(.2, .074), CAB.clusterMat); cluP.rotation.y = -Math.PI / 2; clu.add(cluP);
+  box(.01, .084, .21, pad, .014, 0, 0, clu); cabin.add(clu); // frame sits behind the screen (no z-fighting)
+  // centre screen: a maker panel (mascot, signature, handle), close enough to centre to show on phones
+  const cen = new THREE.Group(); cen.position.set(.62, .94, .13); cen.rotation.z = .2;
+  const cenP = new THREE.Mesh(new THREE.PlaneGeometry(.27, .151), CAB.mapMat); cenP.rotation.y = -Math.PI / 2; cen.add(cenP);
+  box(.01, .165, .285, pad, .014, 0, 0, cen); box(.04, .06, .03, trim, .03, -.1, 0, cen); cabin.add(cen);
+  // yoke with gloved hands on the grips
+  const yoke = new THREE.Group(); yoke.position.set(.38, .82, .3); yoke.rotation.z = .42;
+  box(.03, .045, .3, trim, 0, 0, 0, yoke);
+  for (const s of [1, -1]) { box(.035, .21, .05, trim, 0, .06, .15 * s, yoke); box(.065, .08, .068, CAB.glove, -.02, .12, .155 * s, yoke); }
+  box(.04, .07, .11, pad, .01, -.01, 0, yoke);
   cabin.add(yoke);
-  const strut = (a, b, r = .025) => { const d = b.clone().sub(a); const m = new THREE.Mesh(new THREE.BoxGeometry(r, d.length(), r), M.dark); m.position.copy(a).add(b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); cabin.add(m); };
-  for (const s of [1, -1]) strut(V(.98, .84, .62 * s), V(.18, 1.1, .47 * s), .045);
-  box(.06, .04, .94, M.dark, .18, 1.1, 0, cabin);
-  box(.05, .04, 1.24, M.dark, .98, .84, 0, cabin);
+  // doors with red light strips
+  for (const s of [1, -1]) {
+    box(1.25, .5, .04, trim, -.05, .55, .82 * s, cabin);
+    box(1.25, .03, .07, pad, -.05, .81, .8 * s, cabin);
+    box(1.1, .01, .012, red, -.05, .72, .8 * s, cabin);
+  }
+  const strut = (a, b, r = .025) => { const d = b.clone().sub(a); const m = new THREE.Mesh(new THREE.BoxGeometry(r, d.length(), r), trim); m.position.copy(a).add(b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); cabin.add(m); };
+  for (const s of [1, -1]) strut(V(.98, .86, .62 * s), V(.18, 1.1, .47 * s), .065); // A-pillars
+  box(.06, .045, .94, trim, .18, 1.1, 0, cabin); // windscreen header
+  box(.85, .03, 1, trim, -.22, 1.125, 0, cabin); // roof liner
+  box(.02, .045, .16, pad, .14, 1.06, 0, cabin); box(.02, .03, .015, trim, .15, 1.09, 0, cabin); // mirror
   car.add(cabin);
   const headbar = box(.03, .022, 1.62, M.white, 2.215, .55, 0, body);
   box(.03, .03, 1.74, M.red, -2.225, .8, 0, body);
@@ -1236,6 +1297,7 @@ function frame(dt) {
   canopy.material.transparent = inside; canopy.material.opacity = inside ? .12 : 1; canopy.material.depthWrite = !inside;
   if (inside) {
     camera.quaternion.copy(s.q).multiply(POV_Q);
+    if ((s.cluT = (s.cluT || 0) + 1) % 3 === 0) CAB.drawCluster(s);
     camera.position.copy(HEAD).applyQuaternion(s.q).add(new THREE.Vector3(s.x, s.y, 0));
     // jolt: a thump on touchdown (scaled by how hard you came down) plus a buzz while boosting
     if (s.ground && s.wasAir) s.jolt = Math.min(1, Math.abs(s.pvy || 0) / 6);
@@ -1254,7 +1316,7 @@ function frame(dt) {
   }
   // boost kick: the view widens while the rear jets fire, so the speed reads
   s.fovKick = (s.fovKick || 0) + ((s.boosting && s.phase === 'play' ? 9 : 0) - (s.fovKick || 0)) * (1 - Math.exp(-dt * 5));
-  const baseFov = inside ? (portrait ? 76 : 62) : (portrait ? 62 : 40);
+  const baseFov = inside ? (portrait ? 90 : 64) : (portrait ? 62 : 40);
   if (Math.abs(camera.fov - baseFov - s.fovKick) > .05) { camera.fov = baseFov + s.fovKick; camera.updateProjectionMatrix(); }
   $('airv').textContent = `${Math.round(s.air)} kg`;
   $('hv').textContent = `${Math.round(Math.max(0, s.y) * 3.281)} ft`;
