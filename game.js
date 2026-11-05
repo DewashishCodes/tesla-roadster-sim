@@ -533,6 +533,7 @@ function start(level) {
   reset(level);
   labelButtons(level);
   $('start').classList.add('hide'); $('end').classList.add('hide');
+  $('credits').classList.add('hide'); $('card').classList.remove('open');
   $('hud').style.display = 'block'; $('ctrl').style.display = 'grid';
   toast(level === 1 ? 'Jump all five. Land it soft.' : level === 2 ? 'Climb the wall. Tap LIFT to let go.' : 'How far can you go? Grab the blue air cans.', 1800);
 }
@@ -542,6 +543,10 @@ $('again').addEventListener('click', () => start(state.level));
 $('play3').addEventListener('click', () => start(3));
 document.querySelectorAll('.pickl').forEach((b) => b.addEventListener('click', () => start(+b.dataset.l)));
 $('share').addEventListener('click', shareCard);
+// credits: the avatar opens a small contact card; tapping anywhere else closes it
+$('me').addEventListener('click', (e) => { e.stopPropagation(); const o = $('card').classList.toggle('open'); $('me').setAttribute('aria-expanded', o); });
+$('card').addEventListener('click', (e) => e.stopPropagation());
+document.addEventListener('click', () => { $('card').classList.remove('open'); $('me').setAttribute('aria-expanded', false); });
 function refreshBests() {
   for (const l of [1, 2, 3]) { const g = store.get(`rs-ghost-${l}`); if (g) $(`best${l}`).textContent = `Your best ${g.score.toLocaleString('en-IN')}`; }
 }
@@ -567,7 +572,7 @@ function finish(kind, title, scoreLines = null, score = 0) {
   $('eLines').innerHTML = lines.map(([a, b]) => `${a}<span>${b}</span>`).join('<br>');
   document.querySelectorAll('.pickl').forEach((b) => b.classList.toggle('cur', +b.dataset.l === s.level));
   refreshBests();
-  setTimeout(() => { snapshot(); $('end').classList.remove('hide'); $('ctrl').style.display = 'none'; }, kind === 'ok' ? 1300 : 2600);
+  setTimeout(() => { snapshot(); $('end').classList.remove('hide'); $('ctrl').style.display = 'none'; $('credits').classList.remove('hide'); }, kind === 'ok' ? 1300 : 2600);
 }
 
 // a crash turns the car into a tumbling rigid body: hit-stop slow motion, sparks, panels, the tanks venting, shake and flash
