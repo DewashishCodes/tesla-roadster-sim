@@ -1,5 +1,7 @@
 # Flying Roadster Sim
 
+**Play it: [dewashishcodes.github.io/tesla-roadster-sim](https://dewashishcodes.github.io/tesla-roadster-sim/)**
+
 A small browser game based on the flying Roadster reveal from October 2026. You get about 8 seconds of cold-gas thrust. Jump five parked cars, drop off a wall, or see how far you get in endless mode.
 
 ![Gameplay: the Roadster on its jets above the Semi](docs/screenshot.jpg)
