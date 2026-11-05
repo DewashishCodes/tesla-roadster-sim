@@ -28,7 +28,9 @@ const CLEAR_X = LINEUP[LINEUP.length - 1].x + LINEUP[LINEUP.length - 1].W / 2 + 
 
 // ---------------- renderer, scene, camera ----------------
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+// ?debug&pr=3 forces a pixel ratio (used to record crisp 1080x1920 footage)
+const PR = DEBUG && new URLSearchParams(location.search).has('pr') ? +new URLSearchParams(location.search).get('pr') : Math.min(1.5, window.devicePixelRatio || 1);
+renderer.setPixelRatio(PR);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 renderer.shadowMap.enabled = true;
@@ -1196,6 +1198,7 @@ reset(1);
 state.phase = 'idle';
 let last = performance.now(), acc = 0;
 function loop(now) {
+  if (DEBUG && window.__paused) { last = now; requestAnimationFrame(loop); return; } // recording drives frames itself
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   acc += dt;
   // hit-stop: the first moments of a crash play in slow motion
@@ -1213,6 +1216,9 @@ requestAnimationFrame(loop);
 // test hooks, only with ?debug in the URL
 if (DEBUG) {
   // test hook: run the sim for a fixed time with given inputs, independent of frame rate
+  // frame-step for recording: advance exactly one 30 fps frame with these inputs, with smooth camera and effects
+  window.__tick = (inp = {}) => { input.lift = !!inp.lift; input.boost = !!inp.boost; if (inp.roll) input.rollQueued = true; if (inp.turn) input.turnQueued = true; if (inp.any) input.any = true; const ts = state.cr && state.cr.t < .9 ? .3 : 1; for (let i = 0; i < 4; i++) if (state.phase !== 'idle') step(ts / 120); updateEffects(ts / 30); updateParticles(ts / 30); frame(1 / 30); renderer.render(scene, camera); const s = state; return { x: s.x, y: s.y, vx: s.vx, vy: s.vy, phase: s.phase, stage: s.stage, landed: s.landed, ground: s.ground }; };
+  window.__pause = () => { window.__paused = true; };
   window.__sim = (sec, lift = false, boost = false, roll = false, any = false) => { input.lift = lift; input.boost = boost; if (roll) input.rollQueued = true; if (any) input.any = true; for (let i = 0; i < sec * 120 && state.phase === 'play'; i++) { step(1 / 120); if (i % 4 === 0) updateParticles(1 / 30); } input.lift = input.boost = false; frame(1); renderer.render(scene, camera); const s = state; return { x: +s.x.toFixed(1), y: +s.y.toFixed(2), vx: +s.vx.toFixed(1), vy: +s.vy.toFixed(1), a: +(s.a ?? 0).toFixed(2), stage: s.stage, air: Math.round(s.air), phase: s.phase, landed: s.landed, title: document.getElementById('eTitle').textContent, score: document.getElementById('eScore').textContent }; };
   window.__state = () => state;
   window.__E = E; // test hook
