@@ -1225,6 +1225,9 @@ function frame(dt) {
   $('boostTag').style.opacity = s.bAmt > .05 ? 1 : 0;
   $('sv').style.color = s.bAmt > .3 ? 'var(--red)' : '';
   camPos.lerp(want.clone().add(off), 1 - Math.exp(-dt * 4));
+  // POV crash: the windscreen cracks for a beat, then the camera cuts straight outside to the tumbling wreck
+  if (pov && s.cr && s.cr.t > .35 && !s.cutOut) { s.cutOut = true; camLook.copy(want); camPos.copy(want.clone().add(off)); }
+  $('crack').style.opacity = pov && s.cr && s.cr.t <= .35 && s.phase !== 'idle' ? 1 : 0;
   camera.position.copy(camPos);
   if (s.cr && s.cr.shake > .02) camera.position.add(new THREE.Vector3(rnd(), rnd(), rnd() * .5).multiplyScalar(s.cr.shake * 1.1));
   camera.lookAt(camLook);
