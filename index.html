@@ -30,7 +30,7 @@
   #air { height: 8px; background: #22252b; margin-top: 10px; border-radius: 4px; overflow: hidden; }
   #airfill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--ice), #fff); transition: background .2s; }
   #airfill.low { background: linear-gradient(90deg, var(--red), #ff8a80); }
-  #toast { position: fixed; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; font-weight: 700; color: var(--ink); text-shadow: 0 2px 20px #000; pointer-events: none; opacity: 0; transition: opacity .25s; }
+  #toast { position: fixed; z-index: 30; left: 0; right: 0; top: 30%; text-align: center; font-size: 34px; font-weight: 700; color: var(--ink); text-shadow: 0 2px 20px #000; pointer-events: none; opacity: 0; transition: opacity .25s; }
   /* controls */
   #ctrl { position: fixed; left: 0; right: 0; bottom: 0; padding: 0 14px max(16px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
   #ctrl.four { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; } #ctrl.four .btn { font-size: 15px; }
@@ -209,6 +209,6 @@
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
 </script>
-<script type="module" src="./game.js?v=20"></script>
+<script type="module" src="./game.js?v=21"></script>
 </body>
 </html>

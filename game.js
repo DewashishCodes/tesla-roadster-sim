@@ -1138,9 +1138,13 @@ async function shareCard() {
   const blob = r.blob || await makeCard();
   const file = new File([blob], `roadster-sim-${r.score}.png`, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], text: `I scored ${r.score.toLocaleString('en-IN')} on the Flying Roadster Sim. ${location.href}` }); return; } catch { /* cancelled: fall through to download */ }
+    try { await navigator.share({ files: [file], text: `I scored ${r.score.toLocaleString('en-IN')} on the Flying Roadster Sim. ${location.href}` }); return; }
+    catch (e) { if (e.name === 'AbortError') return; /* user closed the sheet; anything else falls through to saving */ }
   }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+  // in-app browsers (Instagram, Facebook, Android WebView) drop downloads silently: the card is on screen, so long press it
+  if (/Instagram|FBAN|FBAV|; wv\)/.test(navigator.userAgent)) { toast('Long press the card to save it', 3000); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name;
+  document.body.appendChild(a); a.click(); a.remove(); // some Android browsers ignore clicks on a detached link
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   toast('Card saved. Post it and tag @dewashish.ai', 2200);
 }
