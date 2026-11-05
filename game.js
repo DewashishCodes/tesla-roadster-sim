@@ -573,7 +573,11 @@ function finish(kind, title, scoreLines = null, score = 0) {
   $('eLines').innerHTML = lines.map(([a, b]) => `${a}<span>${b}</span>`).join('<br>');
   document.querySelectorAll('.pickl').forEach((b) => b.classList.toggle('cur', +b.dataset.l === s.level));
   refreshBests();
-  setTimeout(() => { snapshot(); $('end').classList.remove('hide'); $('ctrl').style.display = 'none'; $('credits').classList.remove('hide'); }, kind === 'ok' ? 1300 : 2600);
+  // the card is the result screen: draw it while the crash or landing plays out, then show it
+  lastResult.blob = null; $('cardImg').removeAttribute('src'); $('cardWait').style.display = 'block';
+  const cardReady = makeCard().then((b) => { lastResult.blob = b; $('cardImg').src = URL.createObjectURL(b); $('cardWait').style.display = 'none'; });
+  setTimeout(() => { $('end').classList.remove('hide'); $('ctrl').style.display = 'none'; $('hud').style.display = 'none'; $('credits').classList.remove('hide'); }, kind === 'ok' ? 1300 : 2600);
+  return cardReady;
 }
 
 // a crash turns the car into a tumbling rigid body: hit-stop slow motion, sparks, panels, the tanks venting, shake and flash
@@ -1099,7 +1103,7 @@ if (DEBUG) window.__card = makeCard; // test hook
 async function shareCard() {
   const r = lastResult; if (!r) return;
   sfx.click();
-  const blob = await makeCard();
+  const blob = r.blob || await makeCard();
   const file = new File([blob], `roadster-sim-${r.score}.png`, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], text: `I scored ${r.score.toLocaleString('en-IN')} on the Flying Roadster Sim. ${location.href}` }); return; } catch { /* cancelled: fall through to download */ }
