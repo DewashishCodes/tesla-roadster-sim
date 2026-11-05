@@ -19,3 +19,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Exception: the MIT license above covers the source code only. The mascot
+artwork (mascot.png and any image derived from it, including the avatar drawn
+on share cards), the "dewashish.ai" name and handle, and the related branding
+are NOT licensed under MIT. All rights to them are reserved by Dewashish
+Lambore. If you fork or reuse this project, replace them with your own.
