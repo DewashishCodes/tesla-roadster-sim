@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 
 const RED = 0xff3b2f;
+const DEBUG = new URLSearchParams(location.search).has('debug');
 const $ = (id) => document.getElementById(id);
 
 // ---------------- tuning (numbers echo the reel: 250 kg of air, ~30 kg/s to hover, so ~8 s) ----------------
@@ -1006,7 +1007,7 @@ async function makeCard() {
   g.fillStyle = 'rgba(236,238,241,.6)'; g.font = mono(30); const h = '@dewashish.ai'; g.fillText(h, W - 80 - g.measureText(h).width, 1860);
   return new Promise((res) => c.toBlob(res, 'image/png'));
 }
-window.__card = makeCard; // test hook
+if (DEBUG) window.__card = makeCard; // test hook
 async function shareCard() {
   const r = lastResult; if (!r) return;
   sfx.click();
@@ -1100,14 +1101,17 @@ function loop(now) {
   updateParticles(dt * ts);
   frame(dt);
   renderer.render(scene, camera);
-  if (window.__probe) { renderer.getContext().finish(); window.__ms = performance.now() - now; } // test hook: real cost of one frame
+  if (DEBUG && window.__probe) { renderer.getContext().finish(); window.__ms = performance.now() - now; } // test hook: real cost of one frame
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
-// test hook: run the sim for a fixed time with given inputs, independent of frame rate
-window.__sim = (sec, lift = false, boost = false, roll = false, any = false) => { input.lift = lift; input.boost = boost; if (roll) input.rollQueued = true; if (any) input.any = true; for (let i = 0; i < sec * 120 && state.phase === 'play'; i++) { step(1 / 120); if (i % 4 === 0) updateParticles(1 / 30); } input.lift = input.boost = false; frame(1); renderer.render(scene, camera); const s = state; return { x: +s.x.toFixed(1), y: +s.y.toFixed(2), vx: +s.vx.toFixed(1), vy: +s.vy.toFixed(1), a: +(s.a ?? 0).toFixed(2), stage: s.stage, air: Math.round(s.air), phase: s.phase, landed: s.landed, title: document.getElementById('eTitle').textContent, score: document.getElementById('eScore').textContent }; };
-window.__state = () => state;
-window.__E = E; // test hook
+// test hooks, only with ?debug in the URL
+if (DEBUG) {
+  // test hook: run the sim for a fixed time with given inputs, independent of frame rate
+  window.__sim = (sec, lift = false, boost = false, roll = false, any = false) => { input.lift = lift; input.boost = boost; if (roll) input.rollQueued = true; if (any) input.any = true; for (let i = 0; i < sec * 120 && state.phase === 'play'; i++) { step(1 / 120); if (i % 4 === 0) updateParticles(1 / 30); } input.lift = input.boost = false; frame(1); renderer.render(scene, camera); const s = state; return { x: +s.x.toFixed(1), y: +s.y.toFixed(2), vx: +s.vx.toFixed(1), vy: +s.vy.toFixed(1), a: +(s.a ?? 0).toFixed(2), stage: s.stage, air: Math.round(s.air), phase: s.phase, landed: s.landed, title: document.getElementById('eTitle').textContent, score: document.getElementById('eScore').textContent }; };
+  window.__state = () => state;
+  window.__E = E; // test hook
+}
 // self-check of the air budget: hovering burns the full tank in about 8 s, as in the reel
 console.assert(Math.abs(AIR0 / LIFT_BURN - 8.33) < .1, 'air budget drifted from the reel');
 console.assert(Math.abs(angDiff(.1, 2 * Math.PI) - .1) < 1e-9, 'angDiff wrap');
