@@ -1095,7 +1095,7 @@ async function makeCard() {
   g.fillStyle = INK; g.font = '700 64px Caveat, cursive'; g.fillText('Made by Dewashish', 205, fy2 + 24);
   g.fillStyle = GREY; g.font = mono(24); g.fillText('@dewashish.ai', 210, fy2 + 72);
   g.textAlign = 'left'; g.fillStyle = RED_; g.font = sans(40, 700); right('Beat my score', W - 80, fy2 + 14);
-  g.fillStyle = GREY; g.font = mono(22); right(location.hostname && !/localhost|127\.0\.0\.1/.test(location.hostname) ? (location.host + location.pathname).replace(/index.html$/, '').replace(//$/, '') : 'comment FLY on the reel', W - 80, fy2 + 60);
+  g.fillStyle = GREY; g.font = mono(22); right(location.hostname && !/localhost|127\.0\.0\.1/.test(location.hostname) ? (location.host + location.pathname).replace(/index\.html$/, '').replace(/\/$/, '') : 'comment FLY on the reel', W - 80, fy2 + 60);
   return new Promise((res) => c.toBlob(res, 'image/png'));
 }
 const ctxWidth = (g, t, font) => { const f = g.font; g.font = font; const w = g.measureText(t).width; g.font = f; return w; };
