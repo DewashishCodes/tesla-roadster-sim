@@ -37,11 +37,16 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050608);
 scene.fog = new THREE.Fog(0x050608, 40, 190);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 600);
+// viewport size; with ?debug&w=390&h=844 the game renders at a forced phone size for testing on desktop
+const QS = new URLSearchParams(location.search);
+const FORCE = DEBUG && QS.has('w') ? { w: +QS.get('w'), h: +QS.get('h') } : null;
+const view = () => (FORCE ? FORCE : { w: window.innerWidth, h: window.innerHeight });
+const isPortrait = () => { const v = view(); return v.w < v.h; };
 function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
+  const { w, h } = view();
   renderer.setSize(w, h);
   camera.aspect = w / h;
-  camera.fov = w < h ? 58 : 40;
+  camera.fov = w < h ? 62 : 40;
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
@@ -802,11 +807,14 @@ const posts = Array.from({ length: 8 }, () => {
 const eKey = new THREE.SpotLight(0xeef3ff, 1100, 0, .62, .55, 1.6);
 scene.add(eKey, eKey.target);
 const eRed = new THREE.PointLight(RED, 40, 22); scene.add(eRed);
-eKey.visible = eRed.visible = false;
+// a second key light further down the lane, so obstacles are lit before you reach them
+const eAhead = new THREE.SpotLight(0xeef3ff, 1600, 0, .5, .6, 1.6);
+scene.add(eAhead, eAhead.target);
+eKey.visible = eRed.visible = eAhead.visible = false;
 const dm = new THREE.Object3D();
 function laneDressing(x) {
   const on = state && state.level === 3;
-  dashes.visible = on; eKey.visible = eRed.visible = on;
+  dashes.visible = on; eKey.visible = eRed.visible = eAhead.visible = on;
   for (const p of posts) p.visible = on;
   if (!on) return;
   const d0 = Math.floor(x / 5) * 5 - 60;
@@ -816,6 +824,7 @@ function laneDressing(x) {
   posts.forEach((p, i) => (p.position.x = p0 + i * 32));
   eKey.position.set(x + 4, 13, 12); eKey.target.position.set(x + 12, 0, 0);
   eRed.position.set(x + 8, .6, 6.2);
+  eAhead.position.set(x + 30, 14, 12); eAhead.target.position.set(x + 42, 0, 0);
 }
 
 const vehGeo = new Map();
@@ -1140,11 +1149,15 @@ function frame(dt) {
     const i = Math.min(s.ghost.path.length - 1, Math.floor(s.t * 30)), p = s.ghost.path[i];
     ghost.visible = true; ghost.position.set(p[0], p[1], 0); ghost.quaternion.set(p[2], p[3], p[4], p[5]);
   } else if (s.phase !== 'play') ghost.visible = false;
-  const portrait = window.innerWidth < window.innerHeight;
+  const portrait = isPortrait();
   let want, off;
   if (s.level === 2 && s.phase !== 'idle') {
     want = new THREE.Vector3(s.x * .55 + (RX - 3) * .45, Math.max(3, s.y * .7 + 3), 0);
     off = portrait ? new THREE.Vector3(10, 2, 30) : new THREE.Vector3(12, 3, 30);
+  } else if (portrait) {
+    // phones: a 3/4 chase camera down the lane, so obstacles show up far ahead instead of popping in at the screen edge
+    want = new THREE.Vector3(s.x + 14, Math.max(1.4, s.y * .75 + 1.1), 0);
+    off = new THREE.Vector3(-24.5, 4.2 + s.y * .25, 5.2); // camera sits about 10 m behind the car
   } else if (s.level === 3 && s.phase !== 'idle') {
     want = new THREE.Vector3(s.x + (portrait ? 5 : 9), Math.max(2.8, s.y * .6 + 2.4), 0);
     off = portrait ? new THREE.Vector3(-4, 3.4 + s.y * .2, 21) : new THREE.Vector3(-6, 3.6, 23);
@@ -1166,7 +1179,7 @@ function frame(dt) {
   camera.lookAt(camLook);
   // boost kick: the view widens while the rear jets fire, so the speed reads
   s.fovKick = (s.fovKick || 0) + ((s.boosting && s.phase === 'play' ? 9 : 0) - (s.fovKick || 0)) * (1 - Math.exp(-dt * 5));
-  const baseFov = window.innerWidth < window.innerHeight ? 58 : 40;
+  const baseFov = portrait ? 62 : 40;
   if (Math.abs(camera.fov - baseFov - s.fovKick) > .05) { camera.fov = baseFov + s.fovKick; camera.updateProjectionMatrix(); }
   $('airv').textContent = `${Math.round(s.air)} kg`;
   $('hv').textContent = `${Math.round(Math.max(0, s.y) * 3.281)} ft`;
